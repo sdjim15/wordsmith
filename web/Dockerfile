@@ -2,14 +2,15 @@
 FROM golang:1.23-alpine AS build
 WORKDIR /src
 COPY dispatcher.go .
-# Binaire statique : il pourra tourner sur une image minimale sans libc
-RUN CGO_ENABLED=0 go build -o dispatcher dispatcher.go
+# CGO_ENABLED=0 : binaire statique, sans dépendance à une libc
+# -ldflags "-s -w" : retire les symboles de débogage (~9 Mo -> ~6 Mo)
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o dispatcher dispatcher.go
 
-# ---- Étape 2 : exécution (le compilateur Go n'est plus nécessaire) ----
-FROM alpine:3.20
+# ---- Étape 2 : exécution ----
+# "scratch" est une image vide : on n'y met que le binaire et static/
+FROM scratch
 WORKDIR /app
 COPY --from=build /src/dispatcher .
-# Le répertoire static doit se trouver dans le répertoire courant
 COPY static ./static
 EXPOSE 80
 CMD ["./dispatcher"]
