@@ -4,6 +4,8 @@
 services:
   db:
     build: ./db
+    # Image nommée : construite une fois, partagée par toutes les instances
+    image: wordsmith-db
     # Pas de "ports" : la base n'est joignable que depuis le réseau interne
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres"]
@@ -13,6 +15,7 @@ services:
 
   words:
     build: ./words
+    image: wordsmith-words
     # Pas de "ports" non plus : seul web l'appelle
     depends_on:
       db:
@@ -20,9 +23,11 @@ services:
 
   web:
     build: ./web
-    # Seul service accessible de l'extérieur : http://localhost:8080
+    image: wordsmith-web
+    # Seul service accessible de l'extérieur. Le port de la machine est
+    # réglable par instance (variable WEB_PORT, 8080 par défaut)
     ports:
-      - "8080:80"
+      - "${WEB_PORT:-8080}:80"
     # Développement : le dossier static/ de la machine remplace celui de
     # l'image. Le serveur relit les fichiers à chaque requête, donc une
     # modification HTML/CSS est visible en rafraîchissant la page,
